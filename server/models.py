@@ -17,7 +17,7 @@ metadata = MetaData(naming_convention=convention)
 db = SQLAlchemy(metadata=metadata)
 
 
-class Activity(db.Model, SerializerMixin):
+class Activity(db.Model, SerializerMixin, cascade_delete = True):
     __tablename__ = 'activities'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -28,12 +28,13 @@ class Activity(db.Model, SerializerMixin):
     activity_signup = db.relationship('Signup' , back_populates = 'activity')
     
     # Add serialization rules
+    serialize_rules = ("-activity_signup.activity",)
     
     def __repr__(self):
         return f'<Activity {self.id}: {self.name}>'
 
 
-class Camper(db.Model, SerializerMixin):
+class Camper(db.Model, SerializerMixin, cascade_delete = True):
     __tablename__ = 'campers'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -44,16 +45,30 @@ class Camper(db.Model, SerializerMixin):
     camper_signup = db.relationship('Signup', back_populates = 'camper')
     
     # Add serialization rules
+    serialize_rules = ("-camper_signup.camper",)
     
     # Add validation
     @validates("name")
+    def validate_name(self, key, value):
+        if not value:
+            raise ValueError("Must have a name")
+        else:
+            return value    
+        
+
+    @validates("age")
+    def validate_age(self, key, value):
+        if 8 >= value >= 18: 
+            return value
     
     
     def __repr__(self):
         return f'<Camper {self.id}: {self.name}>'
 
 
-class Signup(db.Model, SerializerMixin):
+class Signup(db.Model, SerializerMixin, cascade_delete = True):
+
+
     __tablename__ = 'signups'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -64,6 +79,8 @@ class Signup(db.Model, SerializerMixin):
     camper = db.relationship('Camper', back_populates = 'camper_signup')
     activity = db.relationship('Activity', back_populates = 'activity_signup')
     # Add serialization rules
+    
+    serialize_rules = ("-camper.camper_signup", "-activity.activity_signup")
     
     # Add validation
     
